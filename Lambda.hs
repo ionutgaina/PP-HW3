@@ -7,8 +7,8 @@ import Expr
 
 -- 1.1. find free variables of a Expr
 free_vars :: Expr -> [String]
-free_vars (Variable v) = [v]
-free_vars (Function v expr) = free_vars expr \\ [v]
+free_vars (Variable x) = [x]
+free_vars (Function x expr) = free_vars expr \\ [x]
 free_vars (Application e1 e2) = nub (free_vars e1 ++ free_vars e2)
 
 -- 1.2. reduce a redex
@@ -16,26 +16,28 @@ newVar :: String -> String
 newVar x = x ++ "'"
 
 substitute :: String -> Expr -> Expr -> Expr
-substitute x e' (Variable y)
-  | x == y = e'
-  | otherwise = Variable y
-substitute x e' (Function y e)
-  | x == y = Function y e
-  | y `elem` free_vars e' = let y' = newVar y in Function y' (substitute x e' (substitute y (Variable y') e))
-  | otherwise = Function y (substitute x e' e)
-substitute x e' (Application e1 e2) = Application (substitute x e' e1) (substitute x e' e2)
+substitute x e2 (Variable e1) 
+  | x == e1 = e2
+  | otherwise = Variable e1
+substitute x e2 (Function e1 e)
+  | x == e1 = Function e1 e
+  | e1 `elem` free_vars e2 = substitute x e2 (Function newVar_e1 (substitute e1 (Variable newVar_e1) e))
+  | otherwise = Function e1 (substitute x e2 e)
+  where newVar_e1 = newVar e1
+substitute x e2 (Application e1 e3) = Application (substitute x e2 e1) (substitute x e2 e3)
 
 reduce :: Expr -> String -> Expr -> Expr
-reduce e x e' = substitute x e' e
+reduce e1 x e2 = substitute x e2 e1
 
 -- Normal Evaluation
 -- 1.3. perform one step of Normal Evaluation
 stepN :: Expr -> Expr
 stepN (Application (Function x e1) e2) = reduce e1 x e2
-stepN (Application e1 e2) = Application (stepN e1) e2
+stepN (Application e1 e2)
+  | e1 == stepN e1 = Application e1 (stepN e2)
+  | otherwise = Application (stepN e1) e2
 stepN (Function x e) = Function x (stepN e)
 stepN e = e
-
 
 -- 1.4. perform Normal Evaluation
 reduceN :: Expr -> Expr
@@ -50,9 +52,16 @@ reduceAllN e
 
 
 -- Applicative Evaluation
--- TODO 1.5. perform one step of Applicative Evaluation
+-- 1.5. perform one step of Applicative Evaluation for a Expr
 stepA :: Expr -> Expr
-stepA = undefined
+stepA (Application (Function x e1) (Variable e2)) = reduce e1 x (Variable e2)
+stepA (Application (Function x e1) (Function y e2)) = reduce e1 x (Function y e2)
+stepA (Application (Function x e1) e2) = Application (Function x e1) (stepA e2)
+stepA (Application e1 e2)
+  | e1 == stepN e1 = Application e1 (stepN e2)
+  | otherwise = Application (stepN e1) e2
+stepA (Function x e) = Function x (stepA e)
+stepA e = e
 
 -- TODO 1.6. perform Applicative Evaluation
 reduceA :: Expr -> Expr
