@@ -50,7 +50,7 @@ fail_parser = Parser (const Nothing)
 
 expr :: Parser Expr
 -- expr = parse_variable <|> parse_function <|> parse_application
-expr = parse_variable
+expr = parse_variable <|> parse_function
 
 charParser :: Char -> Parser Char
 charParser c =
@@ -73,13 +73,18 @@ parse_variable = do
   c <- predicateParser isAlpha
   return (Variable [c])
 
--- parse_function :: Parser Expr
--- parse_function = undefined
+parse_function :: Parser Expr
+parse_function = do
+  charParser '\\'
+  c <- predicateParser isAlpha
+  charParser '.'
+  e <- expr
+  return (Function [c] e)
 
 -- parse_application :: Parser Expr
 -- parse_application = undefined
 
--- TODO 2.1. parse a expression
+-- 2.1. parse a expression
 parse_expr :: String -> Expr
 parse_expr str = case parse expr str of
   Just (e, "") -> e
