@@ -56,12 +56,22 @@ charParser :: Char -> Parser Char
 charParser c =
   Parser
     ( \str -> case str of
-        (x : xs) -> if x == c then Just (c, xs) else Nothing
+        (x : xs) -> if x == c then Just (x, xs) else Nothing
+        _ -> Nothing
+    )
+
+predicateParser :: (Char -> Bool) -> Parser Char
+predicateParser p =
+  Parser
+    ( \str -> case str of
+        (x : xs) -> if p x then Just (x, xs) else Nothing
         _ -> Nothing
     )
 
 parse_variable :: Parser Expr
-parse_variable = undefined
+parse_variable = do
+  c <- predicateParser isAlpha
+  return (Variable [c])
 
 -- parse_function :: Parser Expr
 -- parse_function = undefined
@@ -73,7 +83,7 @@ parse_variable = undefined
 parse_expr :: String -> Expr
 parse_expr str = case parse expr str of
   Just (e, "") -> e
-  _ -> error "parse_expr error"
+  _ -> error "parse error"
 
 -- TODO 4.2. parse code
 parse_code :: String -> Code
