@@ -50,7 +50,7 @@ fail_parser :: Parser a
 fail_parser = Parser (const Nothing)
 
 expr :: Parser Expr
-expr = parse_application <|> parse_variable <|> parse_function
+expr = parse_application <|> parse_macro <|> parse_variable <|> parse_function
 
 charParser :: Char -> Parser Char
 charParser c =
@@ -87,7 +87,7 @@ parse_application = do
   e2s <- many (predicateParser isSpace >> parse_atom)
   return (foldl Application e1 e2s)
   where
-    parse_atom = parse_expr_paranthesis <|> parse_variable <|> parse_function
+    parse_atom = parse_expr_paranthesis <|> parse_macro <|> parse_variable <|> parse_function
 
 parse_expr_paranthesis :: Parser Expr
 parse_expr_paranthesis = do
@@ -95,6 +95,12 @@ parse_expr_paranthesis = do
   e <- expr
   charParser ')'
   return e
+
+parse_macro :: Parser Expr
+parse_macro = do
+  charParser '$'
+  str <- some (predicateParser isAlpha)
+  return (Macro str)
 
 -- 2.1. parse a expression
 parse_expr :: String -> Expr
