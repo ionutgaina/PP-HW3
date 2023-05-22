@@ -53,7 +53,7 @@ expr :: Parser Expr
 expr = parse_application <|> parse_macro <|> parse_variable <|> parse_function
 
 expr_atom :: Parser Expr
-expr_atom = parse_expr_paranthesis <|> parse_function <|> parse_macro <|> parse_variable
+expr_atom = parse_application_paranthesis <|> parse_function <|> parse_macro <|> parse_variable
 
 charParser :: Char -> Parser Char
 charParser c =
@@ -90,10 +90,10 @@ parse_application = do
   e2s <- many (predicateParser isSpace >> expr_atom)
   return (foldl Application e1 e2s)
 
-parse_expr_paranthesis :: Parser Expr
-parse_expr_paranthesis = do
+parse_application_paranthesis :: Parser Expr
+parse_application_paranthesis  = do
   charParser '('
-  e <- expr
+  e <- parse_application
   charParser ')'
   return e
 

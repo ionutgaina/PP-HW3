@@ -66,7 +66,7 @@ stepA (Application e1 e2)
 stepA (Function x e) = Function x (stepA e)
 stepA e = e
 
--- TODO 1.6. perform Applicative Evaluation
+-- 1.6. perform Applicative Evaluation
 reduceA :: Expr -> Expr
 reduceA e 
   | e == stepA e = e
@@ -89,6 +89,9 @@ evalMacros dict expr =
     (Variable x) -> Variable x
 
 
--- TODO 4.1. evaluate code sequence using given strategy
+-- 4.1. evaluate code sequence using given strategy
 evalCode :: (Expr -> Expr) -> [Code] -> [Expr]
-evalCode = undefined
+evalCode strategy [] = []
+evalCode strategy (x:xs) = case x of
+  (Evaluate e) -> (strategy e) : (evalCode strategy xs)
+  (Assign x e) -> evalCode strategy xs
