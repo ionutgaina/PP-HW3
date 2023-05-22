@@ -19,9 +19,10 @@ newtype Parser a = Parser
 
 instance Monad Parser where
   return val = Parser $ \str -> Just (val, str)
-  (>>=) (Parser p) f = Parser $ \str -> case p str of
-    Nothing -> Nothing
-    Just (val, str') -> parse (f val) str'
+  (>>=) (Parser p) f = Parser $ \str 
+    -> case p str of
+      Nothing -> Nothing
+      Just (val, str') -> parse (f val) str'
 
 instance Applicative Parser where
   pure x = return x

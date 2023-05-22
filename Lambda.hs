@@ -10,6 +10,7 @@ free_vars :: Expr -> [String]
 free_vars (Variable x) = [x]
 free_vars (Function x expr) = free_vars expr \\ [x]
 free_vars (Application e1 e2) = nub (free_vars e1 ++ free_vars e2)
+free_vars (Macro x) = []
 
 -- 1.2. reduce a redex
 newVar :: String -> String
@@ -25,9 +26,11 @@ substitute x e2 (Function e1 e)
   | otherwise = Function e1 (substitute x e2 e)
   where newVar_e1 = newVar e1
 substitute x e2 (Application e1 e3) = Application (substitute x e2 e1) (substitute x e2 e3)
+substitute x e2 (Macro e1) = Macro e1
 
 reduce :: Expr -> String -> Expr -> Expr
 reduce e1 x e2 = substitute x e2 e1
+
 
 -- Normal Evaluation
 -- 1.3. perform one step of Normal Evaluation
@@ -74,9 +77,17 @@ reduceAllA e
   | e == stepA e = [e]
   | otherwise = e : reduceAllA (stepA e)
   
--- TODO 3.1. make substitutions into a expression with Macros
+-- 3.1. make substitutions into a expression with Macros
 evalMacros :: [(String, Expr)] -> Expr -> Expr
-evalMacros = undefined
+evalMacros dict expr =
+  case expr of
+    (Macro x) -> case lookup x dict of
+      Just e -> evalMacros dict e
+      Nothing -> expr
+    (Application e1 e2) -> Application (evalMacros dict e1) (evalMacros dict e2)
+    (Function x e) -> Function x (evalMacros dict e)
+    (Variable x) -> Variable x
+
 
 -- TODO 4.1. evaluate code sequence using given strategy
 evalCode :: (Expr -> Expr) -> [Code] -> [Expr]
