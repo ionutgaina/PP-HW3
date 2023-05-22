@@ -52,6 +52,9 @@ fail_parser = Parser (const Nothing)
 expr :: Parser Expr
 expr = parse_application <|> parse_macro <|> parse_variable <|> parse_function
 
+expr_atom :: Parser Expr
+expr_atom = parse_expr_paranthesis <|> parse_function <|> parse_macro <|> parse_variable
+
 charParser :: Char -> Parser Char
 charParser c =
   Parser
@@ -78,16 +81,14 @@ parse_function = do
   charParser '\\'
   c <- predicateParser isAlpha
   charParser '.'
-  e <- expr
+  e <- expr_atom
   return (Function [c] e)
 
 parse_application :: Parser Expr
 parse_application = do
-  e1 <- parse_atom
-  e2s <- many (predicateParser isSpace >> parse_atom)
+  e1 <- expr_atom
+  e2s <- many (predicateParser isSpace >> expr_atom)
   return (foldl Application e1 e2s)
-  where
-    parse_atom = parse_expr_paranthesis <|> parse_macro <|> parse_variable <|> parse_function
 
 parse_expr_paranthesis :: Parser Expr
 parse_expr_paranthesis = do
