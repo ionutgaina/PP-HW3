@@ -19,8 +19,8 @@ newtype Parser a = Parser
 
 instance Monad Parser where
   return val = Parser $ \str -> Just (val, str)
-  (>>=) (Parser p) f = Parser $ \str 
-    -> case p str of
+  (>>=) (Parser p) f = Parser $ \str ->
+    case p str of
       Nothing -> Nothing
       Just (val, str') -> parse (f val) str'
 
@@ -91,7 +91,7 @@ parse_application = do
   return (foldl Application e1 e2s)
 
 parse_application_paranthesis :: Parser Expr
-parse_application_paranthesis  = do
+parse_application_paranthesis = do
   charParser '('
   e <- parse_application
   charParser ')'
@@ -107,8 +107,27 @@ parse_macro = do
 parse_expr :: String -> Expr
 parse_expr str = case parse expr str of
   Just (e, "") -> e
-  _ -> error "parse error"
+  _ -> error "parse error expr"
 
 -- TODO 4.2. parse code
+code :: Parser Code
+code = parse_assign <|> parse_evaluate
+
+parse_assign :: Parser Code
+parse_assign = do
+  c <- some (predicateParser isAlpha)
+  skip <- many (predicateParser isSpace)
+  charParser '='
+  skip <- many (predicateParser isSpace)
+  e <- expr
+  return (Assign c e)
+
+parse_evaluate :: Parser Code
+parse_evaluate = do
+  e <- expr
+  return (Evaluate e)
+
 parse_code :: String -> Code
-parse_code = undefined
+parse_code str = case parse code str of
+  Just (e, "") -> e
+  _ -> error "parse error code"

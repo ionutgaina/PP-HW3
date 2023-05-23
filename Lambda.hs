@@ -1,9 +1,11 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
 {-# HLINT ignore "Use camelCase" #-}
 module Lambda where
 
 import Data.List
 import Expr
+import Parser (parse_expr)
 
 -- 1.1. find free variables of a Expr
 free_vars :: Expr -> [String]
@@ -17,20 +19,20 @@ newVar :: String -> String
 newVar x = x ++ "'"
 
 substitute :: String -> Expr -> Expr -> Expr
-substitute x e2 (Variable e1) 
+substitute x e2 (Variable e1)
   | x == e1 = e2
   | otherwise = Variable e1
 substitute x e2 (Function e1 e)
   | x == e1 = Function e1 e
   | e1 `elem` free_vars e2 = substitute x e2 (Function newVar_e1 (substitute e1 (Variable newVar_e1) e))
   | otherwise = Function e1 (substitute x e2 e)
-  where newVar_e1 = newVar e1
+  where
+    newVar_e1 = newVar e1
 substitute x e2 (Application e1 e3) = Application (substitute x e2 e1) (substitute x e2 e3)
 substitute x e2 (Macro e1) = Macro e1
 
 reduce :: Expr -> String -> Expr -> Expr
 reduce e1 x e2 = substitute x e2 e1
-
 
 -- Normal Evaluation
 -- 1.3. perform one step of Normal Evaluation
@@ -44,15 +46,14 @@ stepN e = e
 
 -- 1.4. perform Normal Evaluation
 reduceN :: Expr -> Expr
-reduceN e 
+reduceN e
   | e == stepN e = e
   | otherwise = reduceN (stepN e)
 
 reduceAllN :: Expr -> [Expr]
-reduceAllN e 
+reduceAllN e
   | e == stepN e = [e]
   | otherwise = e : reduceAllN (stepN e)
-
 
 -- Applicative Evaluation
 -- 1.5. perform one step of Applicative Evaluation for a Expr
@@ -68,15 +69,15 @@ stepA e = e
 
 -- 1.6. perform Applicative Evaluation
 reduceA :: Expr -> Expr
-reduceA e 
+reduceA e
   | e == stepA e = e
   | otherwise = reduceA (stepA e)
 
 reduceAllA :: Expr -> [Expr]
-reduceAllA e 
+reduceAllA e
   | e == stepA e = [e]
   | otherwise = e : reduceAllA (stepA e)
-  
+
 -- 3.1. make substitutions into a expression with Macros
 evalMacros :: [(String, Expr)] -> Expr -> Expr
 evalMacros dict expr =
@@ -88,10 +89,13 @@ evalMacros dict expr =
     (Function x e) -> Function x (evalMacros dict e)
     (Variable x) -> Variable x
 
-
 -- 4.1. evaluate code sequence using given strategy
 evalCode :: (Expr -> Expr) -> [Code] -> [Expr]
-evalCode strategy [] = []
-evalCode strategy (x:xs) = case x of
-  (Evaluate e) -> (strategy e) : (evalCode strategy xs)
-  (Assign x e) -> evalCode strategy xs
+evalCode strategy code = evalCode' [] code
+  where
+    evalCode' :: [(String, Expr)] -> [Code] -> [Expr]
+    evalCode' dict [] = []
+    evalCode' dict (c : cs) =
+      case c of
+        (Assign x e) -> evalCode' ((x, evalMacros dict e) : dict) cs
+        (Evaluate e) -> (strategy (evalMacros dict e)) : evalCode' dict cs
