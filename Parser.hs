@@ -109,7 +109,7 @@ parse_expr str = case parse expr str of
   Just (e, "") -> e
   _ -> error "parse error expr"
 
--- TODO 4.2. parse code
+-- 4.2. parse code
 code :: Parser Code
 code = parse_assign <|> parse_evaluate
 
