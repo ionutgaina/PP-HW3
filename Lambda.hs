@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use camelCase" #-}
+{-# HLINT ignore "Eta reduce" #-}
 module Lambda where
 
 import Data.List
@@ -18,21 +19,16 @@ free_vars (Macro x) = []
 newVar :: String -> String
 newVar x = x ++ "'"
 
-substitute :: String -> Expr -> Expr -> Expr
-substitute x e2 (Variable e1)
-  | x == e1 = e2
-  | otherwise = Variable e1
-substitute x e2 (Function e1 e)
-  | x == e1 = Function e1 e
-  | e1 `elem` free_vars e2 = substitute x e2 (Function newVar_e1 (substitute e1 (Variable newVar_e1) e))
-  | otherwise = Function e1 (substitute x e2 e)
-  where
-    newVar_e1 = newVar e1
-substitute x e2 (Application e1 e3) = Application (substitute x e2 e1) (substitute x e2 e3)
-substitute x e2 (Macro e1) = Macro e1
-
 reduce :: Expr -> String -> Expr -> Expr
-reduce e1 x e2 = substitute x e2 e1
+reduce (Variable e1) x e2
+  | e1 == x = e2
+  | otherwise = Variable e1
+reduce (Function e1 e) x e2
+  | e1 == x = Function e1 e
+  | e1 `elem` free_vars e2 = reduce (Function (newVar e1) (reduce e e1 (Variable (newVar e1)))) x e2
+  | otherwise = Function e1 (reduce e x e2)
+reduce (Application e1 e3) x e2 = Application (reduce e1 x e2) (reduce e3 x e2)
+reduce (Macro e1) x e2 = Macro e1
 
 -- Normal Evaluation
 -- 1.3. perform one step of Normal Evaluation
